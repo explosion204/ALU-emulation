@@ -3,9 +3,14 @@
 #include <string.h>
 #include <conio.h>
 
+#define TRUE 1
+#define FALSE 0
+
+typedef int bool;
+
 int* half_adder(int x, int y); // x, y: input signals; int*: int[0] - sum signal, int[1] - carry signal
 int* adder(int x, int y, int c); // x, y, c: input signals; int[0] - sum signal, int[1] - carry signal
-int* sum(int* x, int* y, int bits);
+int* sum(int* x, int* y, int bits, bool *overflow_flag);
 int* twoscomplement(int* x, int bits);
 int* shr(int* x, int value, int bits);
 int* mul(int* x, int* y, int bits);
@@ -13,25 +18,28 @@ int* strtobin(char* str, unsigned int bits);
 
 int main(int argc, char **argv)
 {
-    int bits = argv[1][0] - 48;
+    int bits = atoi(argv[1]);
     int* x_bits = strtobin(argv[2], bits);
     int* y_bits = strtobin(argv[3], bits);
     char op = argv[4][0];
     int* result;
+    bool overflow_flag = FALSE;
     switch (op)
     {
         case '+':
             x_bits = twoscomplement(x_bits, bits);
             y_bits = twoscomplement(y_bits, bits);
-            result = sum(x_bits, y_bits, bits);
+            result = sum(x_bits, y_bits, bits, &overflow_flag);
             break;
         case '-':
             y_bits[0] ^= 1;
             x_bits = twoscomplement(x_bits, bits);
             y_bits = twoscomplement(y_bits, bits);
-            result = sum(x_bits, y_bits, bits);
+            result = sum(x_bits, y_bits, bits, &overflow_flag);
             break;
         case 'x':
+            x_bits = twoscomplement(x_bits, bits);
+            y_bits = twoscomplement(y_bits, bits);
             result = mul(x_bits, y_bits, bits);
             bits *= 2;
             break;
@@ -39,13 +47,16 @@ int main(int argc, char **argv)
 
     result = twoscomplement(result, bits);
     printf("\nResult: ");
-    for (int i = 0; i < bits; i++)
+    if (!overflow_flag)
     {
-        printf("%d", result[i]);
+        for (int i = 0; i < bits; i++)
+            printf("%d", result[i]);
     }
-    //free(x_bits);
-    //free(y_bits);
-    //free(result);
+    else
+        printf("Overflow.");
+    free(x_bits);
+    free(y_bits);
+    free(result);
     getch();
     return 0;
 }
@@ -68,7 +79,7 @@ int* adder(int x, int y, int c)
     return output;
 }
 
-int* sum(int* x, int* y, int bits)
+int* sum(int* x, int* y, int bits, bool* overflow_flag)
 {
     int* result = malloc(sizeof(int) * bits);
     int c = 0;
@@ -79,31 +90,30 @@ int* sum(int* x, int* y, int bits)
         c = temp_result[1];
         free(temp_result);
     }
-//    if (c != 0)
-//        printf("\nOverflow!");
+    if (overflow_flag != NULL)
+        if ((x[0] == 0 && y[0] == 0 && result[0] == 1) || (x[0] == 1 && y[0] == 1 && result[0] == 0))
+            *overflow_flag = TRUE;
     return result;
 }
 
 int* mul(int* x, int* y, int bits)
 {
-    int* add_reg = calloc(2 * bits, sizeof(int));
-    int* sub_reg = calloc(2 * bits, sizeof(int));
+    int* add_reg = calloc(2 * bits , sizeof(int));
+    int* sub_reg = calloc(2 * bits , sizeof(int));
     int* result = calloc(2 * bits, sizeof(int));
     int bit_reg = 0;
     memcpy(add_reg, x, bits * sizeof(int));
     x = twoscomplement(x, bits);
     x[0] ^= 1;
     x = twoscomplement(x, bits);
-
     memcpy(sub_reg, x, bits * sizeof(int));
     memcpy(&result[bits], y, bits * sizeof(int));
-
     for (int i = 0; i < bits; i++)
     {
         if (result[2 * bits - 1] == 0 && bit_reg == 1)
-            result = sum(result, add_reg, 2 * bits);
+            result = sum(result, add_reg, 2 * bits, NULL);
         else if (result[2 * bits - 1] == 1 && bit_reg == 0)
-            result = sum(result, sub_reg, 2 * bits);
+            result = sum(result, sub_reg, 2 * bits, NULL);
         bit_reg = result[2 * bits - 1];
         result = shr(result, 1, 2 * bits);
     }
@@ -118,8 +128,7 @@ int* twoscomplement(int* x, int bits)
         x[i] ^= 1;
     int* single = calloc(bits, sizeof(int));
     single[bits - 1] = 1;
-    int* result = sum(x, single, bits);
-    //free(x);
+    int* result = sum(x, single, bits, NULL);
     return result;
 }
 
@@ -129,7 +138,6 @@ int* shr(int* x, int value, int bits)
     for (int i = 0; i < value + 1; i++)
         result[i] = x[0];
     memcpy(&result[value + 1], &x[1], (bits - value - 1) * sizeof(int));
-    //free(x);
     return result;
 }
 
@@ -140,4 +148,3 @@ int* strtobin(char* str, unsigned int bits)
         bin[i] = str[i] - 48;
     return bin;
 }
-

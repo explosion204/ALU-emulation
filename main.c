@@ -8,12 +8,46 @@
 
 typedef int bool;
 
-int* half_adder(int x, int y); // x, y: input signals; int*: int[0] - sum signal, int[1] - carry signal
-int* adder(int x, int y, int c); // x, y, c: input signals; int[0] - sum signal, int[1] - carry signal
-int* sum(int* x, int* y, int bits, bool *overflow_flag);
+/*
+ARGS: x, y: input signals;
+RETURN VALUE: int[0] - sum signal, int[1] - carry signal
+*/
+int* half_adder(int x, int y);
+
+/*
+ARGS: x, y, c: input signals;
+RETURN VALUE: int[0] - sum signal, int[1] - carry signal
+*/
+int* adder(int x, int y, int c); 
+
+/*
+ARGS: x, y: binary numbers; bits: bit representation; overflow_flag: flag to detect overflow
+RETURN VALUE: binary sum
+*/
+int* sum(int* x, int* y, int bits, bool *overflow_flag); 
+
+/*
+ARGS: x: binary number; bits: bit representation
+RETURN VALUE: two's complement form of binary number
+*/
 int* twoscomplement(int* x, int bits);
+
+/*
+ARGS: x: binary number; value: number of right arithmetic shifts; bits: bit representation
+RETURN VALUE: binary number after right arithmetic shift
+*/
 int* shr(int* x, int value, int bits);
+
+/*
+ARGS: x, y: binary numbers; bits: bit representation
+RETURN VALUE: binary product of x and y (Booth's algorithm)
+*/
 int* mul(int* x, int* y, int bits);
+
+/*
+ARGS: str: string to convert; bits: bit representation
+RETURN VALUE: binary number converted from string
+*/
 int* strtobin(char* str, unsigned int bits);
 
 int main(int argc, char **argv)
